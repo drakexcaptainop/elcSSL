@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Node.js in Electron</h1>
+    <button id="private-key-btn">Llave Privada</button>
+    <script>
+        const {generatePrivateKeyPromise} = require('./openSSLUtils.js');
+        let btn = document.getElementById('private-key-btn');
+        btn.addEventListener('click', () => {
+            generatePrivateKeyPromise()
+                .then(() => {
+                    console.log('Generated Private Key:');
+                })
+                .catch(err => {
+                    console.error('Error generating private key:', err);
+                });
+        });
+    </script>
+
+</body>
+</html>
