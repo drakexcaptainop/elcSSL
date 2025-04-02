@@ -11,31 +11,17 @@
     <button id="new-window-btn">Open New Window</button>
     <button id="csr-btn">Solicitar Certificado</button>
     <script>
-        const {generatePrivateKeyPromise, generateCSRPromise} = require('./openSSLUtils.js');
-        const fs = require('fs');
-        const path = require('path');
-        
+        const Client = require('./client.js')
+        const client = new Client("./keys/privateKey.key", "./keys/csr.pem");
         let crsBtn = document.getElementById('csr-btn');
         crsBtn.addEventListener('click', () => {
-            generateCSRPromise()
-                .then(() => {
-                    console.log('Generated CSR:');
-                })
-                .catch(err => {
-                    console.error('Error generating CSR:', err);
-                });
+            client.requestCertificate()
         });
 
         let btn = document.getElementById('private-key-btn');
 
         btn.addEventListener('click', () => {
-            generatePrivateKeyPromise()
-                .then(() => {
-                    console.log('Generated Private Key:');
-                })
-                .catch(err => {
-                    console.error('Error generating private key:', err);
-                });
+            client.createPrivateKey()
         });
 
         let newWindowBtn = document.getElementById('new-window-btn');
