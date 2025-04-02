@@ -8,9 +8,26 @@
 <body>
     <h1>Node.js in Electron</h1>
     <button id="private-key-btn">Llave Privada</button>
+    <button id="new-window-btn">Open New Window</button>
+    <button id="csr-btn">Solicitar Certificado</button>
     <script>
-        const {generatePrivateKeyPromise} = require('./openSSLUtils.js');
+        const {generatePrivateKeyPromise, generateCSRPromise} = require('./openSSLUtils.js');
+        const fs = require('fs');
+        const path = require('path');
+        
+        let crsBtn = document.getElementById('csr-btn');
+        crsBtn.addEventListener('click', () => {
+            generateCSRPromise()
+                .then(() => {
+                    console.log('Generated CSR:');
+                })
+                .catch(err => {
+                    console.error('Error generating CSR:', err);
+                });
+        });
+
         let btn = document.getElementById('private-key-btn');
+
         btn.addEventListener('click', () => {
             generatePrivateKeyPromise()
                 .then(() => {
@@ -19,6 +36,11 @@
                 .catch(err => {
                     console.error('Error generating private key:', err);
                 });
+        });
+
+        let newWindowBtn = document.getElementById('new-window-btn');
+        newWindowBtn.addEventListener('click', () => {
+            let newWindow = window.open('pop_up.html', '_blank', 'width=400,height=300');
         });
     </script>
 

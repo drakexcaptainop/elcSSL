@@ -34,9 +34,9 @@ var csroptions = {
 
 function generateCSR ( ok, err ) {
     let data = fs.readFileSync('./keys/privateKey.key','utf8')
-    openssl.generateCSR(csroptions, data, "test", (err, csr) => {
-        if (err) {
-            console.error('Error generating CSR:', err)
+    openssl.generateCSR(csroptions, data, rsakeyoptions.encryption.password, (error, csr) => {
+        if (error) {
+            console.error('Error generating CSR:', error)
             return err(error)
         }
         fs.writeFileSync('./keys/certificateRequest.csr', csr)
@@ -68,5 +68,11 @@ function generatePrivateKey ( ok, err ) {
     })
 }
 
-generateCSR(_=>{}, _=>{})
+
+module.exports = {
+    generateCSRPromise: generateCSRPromise,
+    generatePrivateKeyPromise: generatePrivateKeyPromise,
+    generateCSR: generateCSR,
+    generatePrivateKey: generatePrivateKey
+}
 
