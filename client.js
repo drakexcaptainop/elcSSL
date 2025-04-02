@@ -17,7 +17,7 @@ class Client{
     }
     connectServer(port, host){
         this.addr = [port, host]
-        this.socket = net.createConnection(  { port: this.addr[0], host: this.addr[1] })
+        this.socket = net.createConnection(  { port, host })
         return this
     }
 
