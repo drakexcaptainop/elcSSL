@@ -2,6 +2,8 @@ const openssl_node = require('node-openssl-cert')
 const fs = require('fs')
 const { log } = require('console')
 const openssl = new openssl_node()
+const crypto = require('crypto');
+const { rsa } = require('node-openssl-cert/name_mappings');
 
 var rsakeyoptions = {
 	encryption: {
@@ -32,6 +34,12 @@ var csroptions = {
 	}
 }
 
+/**
+ * 
+ * @param {*} privateKey 
+ * @param {Function} ok 
+ * @param {*} err 
+ */
 function generateCSR ( privateKey, ok, err ) {
     openssl.generateCSR(csroptions, privateKey, rsakeyoptions.encryption.password, (error, csr) => {
         if (error) {
@@ -41,6 +49,15 @@ function generateCSR ( privateKey, ok, err ) {
         ok(csr)
     })
 }
+
+function generateDocumentSignature(document, privateKey) {
+    const signer = crypto.createSign('sha256'); 
+    signer.update(document); 
+    signer.end();
+    const signature = signer.sign({ key: privateKey, passphrase: rsakeyoptions.encryption.password });
+    return signature;
+}
+
 
 function generateCSRPromise (privateKey){
     return new Promise((resolve, reject) => {
@@ -69,6 +86,7 @@ module.exports = {
     generateCSRPromise: generateCSRPromise,
     generatePrivateKeyPromise: generatePrivateKeyPromise,
     generateCSR: generateCSR,
-    generatePrivateKey: generatePrivateKey
+    generatePrivateKey: generatePrivateKey,
+    generateDocumentSignature,
 }
 

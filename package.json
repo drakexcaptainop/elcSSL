@@ -11,6 +11,7 @@
   "dependencies": {
     "@types/node": "^22.13.14",
     "electron": "^35.1.2",
+    "electron-store": "^10.0.1",
     "node-openssl-cert": "^0.1.44",
     "openssl-nodejs": "^1.0.5"
   }

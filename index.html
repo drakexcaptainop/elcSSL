@@ -6,28 +6,136 @@
     <title>Document</title>
 </head>
 <body>
+    <div id="title-bar">
+        <button id="minimize-btn">_</button>
+        <button id="maximize-btn">[]</button>
+        <button id="close-btn">X</button>
+    </div>
     <h1>Node.js in Electron</h1>
     <button id="private-key-btn">Llave Privada</button>
-    <button id="new-window-btn">Open New Window</button>
+    <button id="session-btn">Solicitar Sesion</button>
     <button id="csr-btn">Solicitar Certificado</button>
+    <div>
+        <input id="document-input" type="file"></input>
+        <button id="document-btn">Crear firma de documento</button>
+    </div>
+    <div>
+        <input id="validate-input" type="file"></input>
+        <button id="validate-btn">Validar documento</button>
+    </div>
+    
+    <h1 id="server-status">Estado servidor</h1>
+
     <script>
-        const Client = require('./client.js')
-        const client = new Client("./keys/privateKey.key", "./keys/csr.pem");
+        let fileOriginalBytes = null
+        let fileInput = document.getElementById('document-input')
+        let documentBtn = document.getElementById('document-btn')
+        let {Buffer} = require('buffer')
+        documentBtn.onclick = async () => {
+            try{
+                let buffer = await fileInput.files[0].arrayBuffer()
+                fileOriginalBytes = new DataView(buffer)
+            }catch(err){
+                alert(err)
+                return (err)
+            }
+            
+        }
+    </script>
+    <script>
+        let validateInput = document.getElementById('validate-input')
+        let validateBtn = document.getElementById('validate-btn')
+        validateBtn.onclick = async () => {
+            try{
+                let buffer = await validateInput.files[0].arrayBuffer()
+                let result = await client.validateDocument(fileOriginalBytes, buffer)
+                alert("REsults" + result)
+            }catch(err){
+                alert(err)
+                return (err)
+            }
+        }
+    </script>
+    <script>
+
+       
+        let fs = require('fs')
+        const h1 = document.getElementById('server-status')
+        const blocks = {
+            certificate: false,
+            privateKey: false
+        }
         let crsBtn = document.getElementById('csr-btn');
-        crsBtn.addEventListener('click', () => {
-            client.requestCertificate()
+        let Client = require('./client.js')
+        let client = Client.createInstance("./keys/privateKey.key", "./keys/csr.pem")
+        if (client.socket == null) {
+            h1.innerText = "No conectado"
+        } else {
+            h1.innerText = "Conectado"
+        }
+
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on("serverWindowClosed", async ()=>{
+            alert("GOT IT")
+            let options = JSON.parse(fs.readFileSync('./server.options.json', 'utf8'));
+            alert(options.ip + " " + options.port)
+            try{
+                h1.innerText = "Conectando....."
+                await client.connectServer(parseInt(options.port), options.ip)
+            }catch(err){
+                h1.innerText = "Error....."
+                return (err)
+            }
+            alert("Conectado")
+            h1.innerText = "Conectado"
+        })
+
+        let sessionBtn = document.getElementById('session-btn');
+        sessionBtn.addEventListener('click', async () => {
+            try{
+                h1.innerText = "Solicitando Sesion....."
+                await client.requestSession()
+                h1.innerText = "Sesion establecida"
+            }catch(err){
+                alert("Error al solicitar la sesion")
+                return (err)
+            }
+        });
+
+        crsBtn.addEventListener('click', async () => {
+            if (blocks.certificate) {
+                alert("Please wait for the certificate to be generated.")
+                return
+            }
+            blocks.certificate = true
+            try{
+                await client.requestCertificate()
+                alert("requested")
+                blocks.certificate = false
+            }catch(err){
+                alert(err)
+                return (err)
+            }
+            
         });
 
         let btn = document.getElementById('private-key-btn');
 
         btn.addEventListener('click', () => {
+            if (blocks.privateKey) {
+                alert("Please wait for the privateKey to be generated.")
+                return
+            }
+            blocks.privateKey = true
             client.createPrivateKey()
+            blocks.privateKey = false
         });
 
         let newWindowBtn = document.getElementById('new-window-btn');
         newWindowBtn.addEventListener('click', () => {
             let newWindow = window.open('pop_up.html', '_blank', 'width=400,height=300');
         });
+        
     </script>
 
 </body>
