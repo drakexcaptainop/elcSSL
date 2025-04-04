@@ -3,6 +3,7 @@ const {Buffer} = require('buffer')
 const {generatePrivateKeyPromise, generateCSRPromise, generateCSR, generateDocumentSignature} = require('./openSSLUtils')
 const fs = require('fs')
 const { log } = require('console')
+const substitutionCipher = require('./utils/crypto_utils.js')
 const FLAGS = {
     CSR: Buffer.from("CSR"),
     TXT: Buffer.from("TXT"),
@@ -20,24 +21,30 @@ class Client{
         this.privateKey = null
         this.sessionKey = null
         this.sessionKeyBytes = null
+        this.socketIsClosed = true
         Client.instance = this
     }
     async connectServer(port, host){
         return new Promise((resolve, reject) => {
             this.addr = [port, host]
             this.socket = net.createConnection(  { port, host })
+            this.socket.on('close', () => {
+                this.socketIsClosed = true
+            })
             this.socket.once('connect', () => {
                 console.log('Connected to server')
+                this.socketIsClosed = false
                 resolve(this.socket)
             })
             this.socket.once('error', (err) => {
+                this.socketIsClosed = true 
                 reject(err);
             });
         })
     }
     writeSessionKey(keyBytes){
-        this.sessionKey = keyBytes.toString('utf8')
-        this.sessionKeyBytes = keyBytes
+        this.sessionKey = keyBytes.toString('utf8') //cambio
+        this.sessionKeyBytes = Buffer.from(this.sessionKey, 'utf8') //cambio
         console.log('Session key:', this.sessionKey)
         fs.writeFileSync('./session/session.key', keyBytes)
         return true
@@ -47,7 +54,7 @@ class Client{
         const sessionKeyPath = './session/session.key';
         if (fs.existsSync(sessionKeyPath)) {
             this.sessionKey = fs.readFileSync(sessionKeyPath, 'utf8');
-            this.sessionKeyBytes = Buffer.from(this.sessionKey, 'utf8')
+            this.sessionKeyBytes = Buffer.from(substitutionCipher.encrypt(this.sessionKey), 'utf8') //cambio
             console.log('Session key loaded from file:', this.sessionKey);
             return true
         } else {
@@ -102,6 +109,7 @@ class Client{
         return new Promise((resolve, reject) => {
             let privateKey = this.loadPrivateKey()
             let signature = generateDocumentSignature(document, privateKey)
+            fs.writeFileSync('./signatures/signature.sha256', signature)
             let bytes = Buffer.concat([FLAGS.TXT, this.sessionKeyBytes, signature, fake ? Buffer.from(fake): Buffer.from(document) ])
             this.socket.write(bytes, (err) => {
                 if (err) {
